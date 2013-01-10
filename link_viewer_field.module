@@ -1,0 +1,127 @@
+<?php
+
+/**
+ * @link
+* A field to embed on iFrames any url / uri
+* The field may be resized and/or otherwise modified using the css selector
+* ".link-viewer-field"
+*/
+
+/**
+* Implements hook_help().
+*/
+function link_viewer_field_help($path, $arg) {
+	$helptext = '';
+	if ($path == 'admin/help#link_viewer_field') {
+		$helptext = '<p>';
+		$helptext .= t('This module provides a way to visualize URIs as iFrames within the VLC.');
+		$helptext .= '</p>';
+		$helptext .= '<p>';
+		$helptext .= t('To use this field format, add a link field to a new or existing content type (such as Resource) on the content type\'s Manage Fields form.' .
+				' The Link field type provides only one widget type - Link - so select that. On the content type\'s "Manage Display" form,' .
+				' there will be a drop-down select list of available display formats for the File field. To display the file within the link' .
+				' viewer, choose the \'link Document Viewer\' format.');
+		$helptext .= '</p>';
+		$helptext .= '<p>';
+		$helptext .= t('The document viewer may be styled using the CSS selector \'.link-viewer-field\'. By default, the viewer\'s width is 100% and its height is 400px, with a 1px black border.');
+		$helptext .= '</p>';
+	}
+	return $helptext;
+}
+/**
+ * Implements hook_field_formatter_info_alter().
+ * Add a new formatter to the
+ * list of formatters available for the Link field type.
+ */
+function link_viewer_field_field_formatter_info_alter(&$info) {
+	$new_formatter = array(
+			'label' => t('Link Viewer'),
+			'field types' => array(0 => 'link_field'),
+			'settings' => array(),
+			'module' => 'link_viewer_field',
+	);
+	$info['link_viewer_field_embedded_doc'] = $new_formatter;
+}
+
+/**
+ * Implements hook_field_formatter_view().
+ * Renders the ouput of a
+ * 'link viewer' formatted field within an iframe that
+ * pulls in the link viewer to display the file inline.
+ *
+ */
+function link_viewer_field_field_formatter_view($entity_type, $entity, $field, $instance, $langcode, $items, $display) {
+	$element = array();
+	switch ($display['type']) {
+		// This formatter outputs the field within an iframe.
+		case 'link_viewer_field_embedded_doc':
+			foreach ($items as $delta => $item) {
+				$url = $item['url'];
+				// $url = link_create_url($url);
+				//$urlstr = "http://";
+				//$url = substr($url,7);
+
+				$encoded_url = urlencode($url);
+			//	$urlstr.=$url;
+				//$url = $urlstr;
+				drupal_add_css(drupal_get_path('module', 'link_viewer_field') . '/link_viewer_field.css');
+
+				/**
+					 * Use different embedding services depending on type of document.
+					 * Supported File Formats:
+					 * txt, pdf, mp3, ppt, pptx, docx, odt, xlsx, xls, rtf,
+					 * doc, wav, jpg, png, gif
+					*/
+					
+					// PDF, DOC, PPT, XLS files are displayed with Google Docs
+				   
+					if (strpos($url,'docx')!==false || strpos($url,'DOCX') !== false||
+							strpos($url,'pptx')!==false || strpos($url,'PPTX') !== false ||
+							strpos($url,'xlsx')!==false || strpos($url,'XLSX') !== false ||
+							strpos($url,'txt')!==false || strpos($url,'TXT')   !== false ||
+							strpos($url,'rtf')!==false || strpos($url,'RTF')   !== false){
+						
+						
+							$element[$delta]['#markup'] = '<iframe class="link-viewer-field" width="100%" height="400" src="http://viewer.zoho.com/api/urlview.do?url=' . $encoded_url . '"></iframe>';
+						
+							
+					}
+					
+				    else if(strpos($url,'pdf') !== false || strpos($url,'PDF') !== false||
+				    		 		strpos($url,'doc') !== false || strpos($url,'DOC') !== false ||
+				    		 		strpos($url,'ppt') !== false || strpos($url,'PPT') !== false ||
+				    		 		strpos($url,'xls') !== false || strpos($url,'XLS') !== false){
+				    		
+				    		$element[$delta]['#markup'] = '<iframe class="link-viewer-field" width="100%" height="400" src="http://docs.google.com/gview?embedded=true&url=' . $encoded_url . '"></iframe>';
+				    		 
+				    	}
+		    
+				    // Photos are embedded as iframes (could use img tag but gets distorted)
+					else if(strpos($url,'jpg') !== false || strpos($url,'JPG') !== false||
+											strpos($url,'png') !== false||strpos($url,'PNG') !== false||
+											strpos($url,'gif') !== false ||strpos($url,'GIF') !== false) {
+						$element[$delta]['#markup'] = '<iframe class="link-viewer-field" width="100%" height="400" src="' . $url . '"></iframe>';
+						
+				    }
+				    // Audio files are embedded (only works in HTML5)
+				    else if(strpos($url,'wav') !== false || strpos($url,'WAV') !== false||
+											strpos($url,'mp3') !== false ||strpos($url,'MP3') !== false){
+				    	$element[$delta]['#markup'] = '<audio controls="controls"> <source src="' . $url . '"/>The audio player requires an HTML5 compatible browser.</audio>';
+				    	
+				    }
+				    
+				    // All other file types are displayed as regular iframes
+					else{
+						
+						$element[$delta]['#markup'] = '<iframe class="link-viewer-field" height="400" width="100%" src="' . $url . '"></iframe>';
+					}
+					
+				}
+
+				//$element[$delta]['#markup'] ='<iframe class="link-viewer-field" src="'.$url.'"></iframe>';	
+			
+			
+		break;
+	}
+	return $element;
+}

@@ -1,0 +1,11 @@
+name = Link Viewer 
+description = A viewer that creats an iFrame for every link provided.
+dependencies[] = field
+core = 7.x
+
+; Information added by drupal.org packaging script on 2011-10-18
+version = "7.x-1.3"
+core = "7.x"
+project = "link_viewer_field"
+datestamp = "1318953698"
+
